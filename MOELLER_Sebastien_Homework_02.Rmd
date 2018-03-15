@@ -35,16 +35,22 @@ Build an image recognition system for a 1000 everyday object monkeyegories (Imag
 
 #### Install keras
 ```{r}
-if (!require('pacman')) install.packages('pacman')
+# If the function 'is_keras_available()' returns FALSE install_keras(), if that doesn't work install package from github directly and run install_keras() afterwards:
+# remove.packages('reticulate')
+# remove.packages('tensorflow')
+# remove.packages('keras')
 
-pacman::p_load(tensorflow, reticulate, keras)
-
-# If the function 'is_keras_available()' returns FALSE install from github directly:
 # install.packages('devtools')
 # require(devtools)
 # install_github('rstudio/reticulate')
 # install_github('rstudio/tensorflow')
 # install_github('rstudio/keras')
+if (!require('pacman')) install.packages('pacman')
+
+pacman::p_load(tensorflow, reticulate, keras)
+
+#install_keras()
+#is_keras_available()
 ```
 
 #### ResNet50
