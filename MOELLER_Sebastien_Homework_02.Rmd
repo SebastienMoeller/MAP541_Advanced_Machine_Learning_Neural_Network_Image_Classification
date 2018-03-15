@@ -68,9 +68,10 @@ Xception, VGG16, VGG19, ResNet50, InceptionV3, InceptionResNetV2, MobileNet, Den
 
 #### Opening an Image
 open an image ('my_image.jpg' in the following example) representing a single object (if possible represented in ImageNet)
+
 ```{r}
 img_path <- 'hot_air_balloon.jpeg'
-img <- image_load(img_path, target_size <- c(224,224))
+img <- image_load(img_path, target_size = c(224,224))
 ```
 
 #### Reshape the image to fit the input format of your model
@@ -165,7 +166,7 @@ file.copy(file.path(original_dataset_dir, fnames),
 ```
 
 
-Let’s instantiate the VGG16 model.
+Let's instantiate the VGG16 model.
 ```{r}
 conv_base <- application_vgg16(
   weights = "imagenet",
@@ -265,15 +266,13 @@ model %>% compile(
   optimizer = optimizer_rmsprop(lr = 2e-5),
   metrics = c("accuracy")
 )
-```
 
-```{r}
 history <- model %>% fit_generator(
   train_generator,
-  steps_per_epoch = 100,
-  epochs = 30,
+  steps_per_epoch = 10,
+  epochs = 20,
   validation_data = validation_generator,
-  validation_steps = 50
+  validation_steps = 10
 )
 ```
 
