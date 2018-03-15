@@ -112,7 +112,7 @@ proceed adapting the code from https://keras.rstudio.com/articles/applimonkeyion
 ```{r}
 original_dataset_dir <- 'data/original'
 
-base_dir <- 'data/monkeys_and_dogs'
+base_dir <- 'data/cats_and_dogs'
 dir.create(base_dir)
 
 train_dir <- file.path(base_dir, 'train')
@@ -122,33 +122,33 @@ dir.create(validation_dir)
 test_dir <- file.path(base_dir, 'test')
 dir.create(test_dir)
 
-train_monkeys_dir <- file.path(train_dir, 'monkeys')
+train_monkeys_dir <- file.path(train_dir, 'cats')
 dir.create(train_monkeys_dir)
 
 train_dogs_dir <- file.path(train_dir, 'dogs')
 dir.create(train_dogs_dir)
 
-validation_monkeys_dir <- file.path(validation_dir, 'monkeys')
+validation_monkeys_dir <- file.path(validation_dir, 'cats')
 dir.create(validation_monkeys_dir)
 
 validation_dogs_dir <- file.path(validation_dir, 'dogs')
 dir.create(validation_dogs_dir)
 
-test_monkeys_dir <- file.path(test_dir, 'monkeys')
+test_monkeys_dir <- file.path(test_dir, 'cats')
 dir.create(test_monkeys_dir)
 
 test_dogs_dir <- file.path(test_dir, 'dogs')
 dir.create(test_dogs_dir)
 
-fnames <- paste0('monkey.', 1:15, '.jpg')
+fnames <- paste0('cat.', 1:15, '.jpg')
 file.copy(file.path(original_dataset_dir, fnames), 
           file.path(train_monkeys_dir)) 
 
-fnames <- paste0('monkey.', 16:19, '.jpg')
+fnames <- paste0('cat.', 16:19, '.jpg')
 file.copy(file.path(original_dataset_dir, fnames), 
           file.path(validation_monkeys_dir))
 
-fnames <- paste0('monkey.', 20:24, '.jpg')
+fnames <- paste0('cat.', 20:24, '.jpg')
 file.copy(file.path(original_dataset_dir, fnames),
           file.path(test_monkeys_dir))
 
