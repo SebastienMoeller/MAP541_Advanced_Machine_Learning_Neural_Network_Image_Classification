@@ -32,6 +32,10 @@ The query "cheese" matches 30 synsets.
 #### Best classifier
 What is the best classifier on ImageNet and what is its error rate?
 
+The winner of the 2017 challenge used the following:
+
+Adaptive attention[1] and deep combined convolutional models[2,3] are used for LOC task. 
+Scale[4,5,6], context[7], sampling and deep combined convolutional networks[2,3] are considered for DET task. Object density estimation is used for score re-rank. With a mean AP of 0.731613.
 
 # Exercise 2 -- Build an image recognition system
 Build an image recognition system for a 1000 everyday object categories (ImageNet ILSVRC) using Keras and TensorFlow.
@@ -40,13 +44,13 @@ Build an image recognition system for a 1000 everyday object categories (ImageNe
 ```{r}
 if (!require('pacman')) install.packages('pacman')
 
-pacman::p_load(tensorflow, reticulate, keras, ggplot2, ggthemes)
+pacman::p_load(tensorflow, reticulate, keras, ggplot2, ggthemes, EBImage)
 theme_set(theme_solarized_2(light = FALSE))
 
 # Keras needs to be install after loading the package
-if(!is_keras_abailable()){
-  install_keras()
-}
+# if(!is_keras_abailable()){
+#   install_keras()
+# }
 ```
 
 #### ResNet50
@@ -67,27 +71,27 @@ open an image ('my_image.jpg' in the following example) representing a single ob
 ```{r}
 img_path <- 'hot_air_balloon.jpeg'
 img <- image_load(img_path, target_size = c(224,224))
-```
 
-#### Reshape the image to fit the input format of wer model
-```{r}
+# Reshape the image to fit the input format of wer model
 x <- image_to_array(img)
 x <- array_reshape(x, c(1, dim(x)))
-```
 
-#### Preprocess the input
-```{r}
+# Preprocess the input
 x <- imagenet_preprocess_input(x)
-```
 
-#### get the model predictions
-```{r}
+# get the model predictions
 preds <- model0 %>% predict(x)
 ```
 
 #### display the top 5 recognized objects. Do we find the one represented on our image?
 ```{r}
 imagenet_decode_predictions(preds, top <- 5)[[1]]
+```
+The NN recognized the hot air balloons as balloons, it recognized the lakeside and interpreted the light house as a church. Overall a good classification.
+
+```{r}
+img = readImage("hot_air_balloon.jpeg")
+display(img, method = "raster")
 ```
 
 # Exericse 3 -- Your Turn
@@ -101,9 +105,8 @@ I chose cats and dogs.
 Proceed adapting the code from https://keras.rstudio.com/articles/applications.html
 
 I downloaded 50 images for each class and setup my data as follows:
-```{r}
+```{r, message = FALSE, warning = FALSE}
 original_dataset_dir <- 'data/original'
-
 base_dir <- 'data/cats_and_dogs'
 dir.create(base_dir)
 
@@ -114,45 +117,45 @@ dir.create(validation_dir)
 test_dir <- file.path(base_dir, 'test')
 dir.create(test_dir)
 
-train_monkeys_dir <- file.path(train_dir, 'cats')
-dir.create(train_monkeys_dir)
+train_cats_dir <- file.path(train_dir, 'cats')
+dir.create(train_cats_dir)
 
 train_dogs_dir <- file.path(train_dir, 'dogs')
 dir.create(train_dogs_dir)
 
-validation_monkeys_dir <- file.path(validation_dir, 'cats')
-dir.create(validation_monkeys_dir)
+validation_cats_dir <- file.path(validation_dir, 'cats')
+dir.create(validation_cats_dir)
 
 validation_dogs_dir <- file.path(validation_dir, 'dogs')
 dir.create(validation_dogs_dir)
 
-test_monkeys_dir <- file.path(test_dir, 'cats')
-dir.create(test_monkeys_dir)
+test_cats_dir <- file.path(test_dir, 'cats')
+dir.create(test_cats_dir)
 
 test_dogs_dir <- file.path(test_dir, 'dogs')
 dir.create(test_dogs_dir)
 
-fnames <- paste0('cat.', 1:38, '.jpg')
+fnames <- paste0('cat.', 1:30, '.jpg')
 file.copy(file.path(original_dataset_dir, fnames), 
-          file.path(train_monkeys_dir)) 
+          file.path(train_cats_dir)) 
 
-fnames <- paste0('cat.', 39:44, '.jpg')
+fnames <- paste0('cat.', 31:40, '.jpg')
 file.copy(file.path(original_dataset_dir, fnames), 
-          file.path(validation_monkeys_dir))
+          file.path(validation_cats_dir))
 
-fnames <- paste0('cat.', 45:50, '.jpg')
+fnames <- paste0('cat.', 41:50, '.jpg')
 file.copy(file.path(original_dataset_dir, fnames),
-          file.path(test_monkeys_dir))
+          file.path(test_cats_dir))
 
-fnames <- paste0('dog.', 1:38, '.jpg')
+fnames <- paste0('dog.', 1:30, '.jpg')
 file.copy(file.path(original_dataset_dir, fnames),
           file.path(train_dogs_dir))
 
-fnames <- paste0('dog.', 39:44, '.jpg')
+fnames <- paste0('dog.', 31:40, '.jpg')
 file.copy(file.path(original_dataset_dir, fnames),
           file.path(validation_dogs_dir)) 
 
-fnames <- paste0('dog.', 45:50, '.jpg')
+fnames <- paste0('dog.', 41:50, '.jpg')
 file.copy(file.path(original_dataset_dir, fnames),
           file.path(test_dogs_dir))
 ```
@@ -203,11 +206,12 @@ As we can see, the convolutional base of VGG16 has 14,714,688 parameters, which 
 Before we compile and train the model, it’s very important to freeze the convolutional base. Freezing a layer or set of layers means preventing their weights from being updated during training. If we don’t do this, then the representations that were previously learned by the convolutional base will be modified during training. Because the dense layers on top are randomly initialized, very large weight updates would be propagated through the network, effectively destroying the representations previously learned.
 
 In Keras, we freeze a network using the `freeze_weights()` function:
-```{r}
+```{r, eval = FALSE}
 length(model$trainable_weights)
 ```
 
-```{r}
+
+```{r, eval = FALSE}
 freeze_weights(conv_base)
 length(model$trainable_weights)
 ```
@@ -217,7 +221,7 @@ With this setup, only the weights from the two dense layers that we added will b
 Overfitting is caused by having too few samples to learn from, rendering us unable to train a model that can generalize to new data. Given infinite data, the model would be exposed to every possible aspect of the data distribution at hand: we would never overfit. Data augmentation takes the approach of generating more training data from existing training samples, by augmenting the samples via a number of random transformations that yield believable-looking images. The goal is that at training time, the model will never see the exact same picture twice. This helps expose the model to more aspects of the data and generalize better.
 
 In Keras, this can be done by configuring a number of random transformations to be performed on the images read by an `image_data_generator()`
-```{r}
+```{r, eval = FALSE}
 train_datagen = image_data_generator(
   rescale = 1/255,
   rotation_range = 40,
@@ -231,7 +235,8 @@ train_datagen = image_data_generator(
 ```
 
 Now we can train our model using the image data generator:
-```{r}
+```{r, eval = FALSE}
+set.seed(100)
 # Note that the validation data shouldn't be augmented!
 test_datagen <- image_data_generator(rescale = 1/255)  
 
@@ -239,7 +244,7 @@ train_generator <- flow_images_from_directory(
   train_dir,                  # Target directory  
   train_datagen,              # Data generator
   target_size = c(150, 150),  # Resizes all images to 150 × 150
-  batch_size = 20,
+  batch_size = 5,
   class_mode = "binary"       # binary_crossentropy loss for binary labels
 )
 
@@ -247,7 +252,7 @@ validation_generator <- flow_images_from_directory(
   validation_dir,
   test_datagen,
   target_size = c(150, 150),
-  batch_size = 20,
+  batch_size = 5,
   class_mode = "binary"
 )
 
@@ -259,34 +264,58 @@ model %>% compile(
 
 history <- model %>% fit_generator(
   train_generator,
-  steps_per_epoch = 10,
-  epochs = 20,
+  steps_per_epoch = 6,
+  epochs = 15,
   validation_data = validation_generator,
   validation_steps = 10
 )
 ```
 
-```{r}
+```{r, eval = FALSE}
 epochTimeline <- as.data.frame(history$metrics)
-epochTimeline$epoch <- seq(1,20)
+epochTimeline$epoch <- seq(1,15)
 ```
 
-```{r}
-ggplot(epochTimeline) + 
+```{r, eval = FALSE}
+p1 <- ggplot(epochTimeline) + 
   geom_point(aes(epoch, loss), size = 2, color = 'tan1') + 
   geom_line(aes(epoch, loss), color = 'tan1') +
   geom_point(aes(epoch, val_loss), size = 2, color = 'seagreen3') + 
-  geom_line(aes(epoch, val_loss), color = 'seagreen3')
+  geom_line(aes(epoch, val_loss), color = 'seagreen3') +
+  geom_hline(yintercept = epochTimeline$loss[15], color = 'tan1') +
+  annotate('text', 0, epochTimeline$loss[15], vjust = -.4, hjust = 0, label = paste0(round(epochTimeline$loss[15], 4)), color = 'tan1') +
+  geom_hline(yintercept = epochTimeline$val_loss[15], color = 'seagreen3') +
+  annotate('text', 0, epochTimeline$val_loss[15], vjust = -.4, hjust = 0, label = paste0(round(epochTimeline$val_loss[15], 4)), color = 'seagreen3')
+
+p1
+ggsave("Transfer loss vs val_loss.png")
+```
+```{r}
+img = readImage("Transfer loss vs val_loss.png")
+display(img, method = "raster")
 ```
 
-```{r}
-ggplot(epochTimeline) + 
+
+```{r, eval = FALSE}
+p2 <- ggplot(epochTimeline) + 
   geom_line(aes(epoch, acc), color = 'tan1') +
   geom_point(aes(epoch, acc), size = 2, color = 'tan1') + 
   geom_line(aes(epoch, val_acc), color = 'seagreen3') +
-  geom_point(aes(epoch, val_acc), size = 2, color = 'seagreen3')
+  geom_point(aes(epoch, val_acc), size = 2, color = 'seagreen3') +
+  geom_hline(yintercept = epochTimeline$acc[15], color = 'tan1') +
+  annotate('text', 0, epochTimeline$acc[15], vjust = -.4, hjust = 0, label = paste0(round(epochTimeline$acc[15], 4)), color = 'tan1') +
+  geom_hline(yintercept = epochTimeline$val_acc[15], color = 'seagreen3') +
+  annotate('text', 0, epochTimeline$val_acc[15], vjust = -.4, hjust = 0, label = paste0(round(epochTimeline$val_acc[15], 4)), color = 'seagreen3')
+
+p2
+ggsave("Transfer acc vs val_acc.png")
 ```
-Plotting the results of training the model, we reach a validation accuracy of about `91.67%`. Because the validation set is so small the accuracy moves in increments of around `8.33%`.
+
+```{r}
+img = readImage("Transfer acc vs val_acc.png")
+display(img, method = "raster")
+```
+Plotting the results of training the model, we reach a validation accuracy of `72%`.
 
 #### FINE-TUNING
 Another widely used technique for model reuse, complementary to feature extraction, is fine-tuning. Fine-tuning consists of unfreezing a few of the top layers of a frozen model base used for feature extraction, and jointly training both the newly added part of the model (in this case, the fully connected classifier) and these top layers. This is called fine-tuning because it slightly adjusts the more abstract representations of the model being reused, in order to make them more relevant for the problem at hand.
@@ -305,29 +334,29 @@ As stated earlier, it’s necessary to freeze the convolution base of VGG16 in o
 
 We have already completed the first three steps when doing feature extraction. Let’s proceed with step 4: Unfreeze conv_base and then freeze individual layers inside it.
 
-As a reminder, this is what wer convolutional base looks like:
+As a reminder, this is what the convolutional base looks like:
 ```{r}
 summary(conv_base)
 ```
 
-We will fine-tune all of the layers from `block3_conv1` and on. Why not fine-tune the entire convolutional base? we could. But we need to consider the following:
+We will fine-tune all of the layers from `block3_conv1` and on. Why not fine-tune the entire convolutional base? We could, but we need to consider the following:
 
 -- Earlier layers in the convolutional base encode more-generic, reusable features, whereas layers higher up encode more-specialized features. It’s more useful to fine-tune the more specialized features, because these are the ones that need to be repurposed on our new problem. There would be fast-decreasing returns in fine-tuning lower layers.
 
 -- The more parameters we’re training, the more we’re at risk of overfitting. The convolutional base has 15 million parameters, so it would be risky to attempt to train it on our small dataset.
 
 Thus, in this situation, it’s a good strategy to fine-tune only some of the layers in the convolutional base. Let’s set this up.
-```{r}
+```{r, eval = FALSE}
 unfreeze_weights(conv_base, from = 'block3_conv1')
 ```
 
-```{r}
+```{r, eval = FALSE}
 length(model$trainable_weights)
 ```
-This version of the model has `22` trainable weights, a significant increase from the first models `4`.
+This version of the model has `22` trainable weights, a significant increase from the first model's `4`.
 
 Now we can begin fine-tuning the network. we’ll do this with the RMSProp optimizer, using a very low learning rate. The reason for using a low learning rate is that we want to limit the magnitude of the modifications we make to the representations of the three layers we’re fine-tuning. Updates that are too large may harm these representations.
-```{r}
+```{r, eval = FALSE}
 model %>% compile(
   loss = "binary_crossentropy",
   # low learning rate
@@ -337,53 +366,57 @@ model %>% compile(
 
 history <- model %>% fit_generator(
   train_generator,
-  steps_per_epoch = 10,
-  epochs = 20,
+  steps_per_epoch = 6,
+  epochs = 15,
   validation_data = validation_generator,
   validation_steps = 10
 )
 ```
 
-```{r}
+```{r, eval = FALSE}
 epochFinetune <- as.data.frame(history$metrics)
-epochFinetune$epoch <- seq(1,20)
+epochFinetune$epoch <- seq(1,15)
 ```
 
-```{r}
-ggplot(epochFinetune) + 
+```{r, eval = FALSE}
+p3 <- ggplot(epochFinetune) + 
   geom_point(aes(epoch, loss), size = 2, color = 'tan1') + 
   geom_line(aes(epoch, loss), color = 'tan1') +
   geom_point(aes(epoch, val_loss), size = 2, color = 'seagreen3') + 
-  geom_line(aes(epoch, val_loss), color = 'seagreen3')
+  geom_line(aes(epoch, val_loss), color = 'seagreen3') +
+  geom_hline(yintercept = epochFinetune$loss[15], color = 'tan1') +
+  annotate('text', 0, epochFinetune$loss[15], vjust = -.4, hjust = 0, label = paste0(round(epochFinetune$loss[15], 4)), color = 'tan1') +
+  geom_hline(yintercept = epochFinetune$val_loss[15], color = 'seagreen3') +
+  annotate('text', 0, epochFinetune$val_loss[15], vjust = -.4, hjust = 0, label = paste0(round(epochFinetune$val_loss[15], 4)), color = 'seagreen3')
+
+p3
+ggsave("Fine Tune loss vs val_loss.png")
 ```
 
 ```{r}
-ggplot(epochFinetune) + 
-  geom_point(aes(epoch, acc), size = 2, color = 'tan1') + 
+img = readImage("Fine Tune loss vs val_loss.png")
+display(img, method = "raster")
+```
+
+```{r, eval = FALSE}
+p4 <- ggplot(epochFinetune) + 
   geom_line(aes(epoch, acc), color = 'tan1') +
-  geom_point(aes(epoch, val_acc), size = 2, color = 'seagreen3') + 
-  geom_line(aes(epoch, val_acc), color = 'seagreen3')
+  geom_point(aes(epoch, acc), size = 2, color = 'tan1') + 
+  geom_line(aes(epoch, val_acc), color = 'seagreen3') +
+  geom_point(aes(epoch, val_acc), size = 2, color = 'seagreen3') +
+  geom_hline(yintercept = epochFinetune$acc[15], color = 'tan1') +
+  annotate('text', 0, epochFinetune$acc[15], vjust = -.4, hjust = 0, label = paste0(round(epochFinetune$acc[15], 4)), color = 'tan1') +
+  geom_hline(yintercept = epochFinetune$val_acc[15], color = 'seagreen3') +
+  annotate('text', 0, epochFinetune$val_acc[15], vjust = -.4, hjust = 0, label = paste0(round(epochFinetune$val_acc[15], 4)), color = 'seagreen3')
+
+p4
+ggsave("Fine Tune acc vs val_acc.png")
 ```
 
 ```{r}
-epochFinetune$acc[20]
+img = readImage("Fine Tune acc vs val_acc.png")
+display(img, method = "raster")
 ```
-
-We can now finally evaluate this model on the test data:
-```{r}
-test_generator <- flow_images_from_directory(
-  test_dir,
-  test_datagen,
-  target_size = c(150, 150),
-  batch_size = 20,
-  class_mode = "binary"
-)
-```
-
-```{r}
-model %>% evaluate_generator(test_generator, steps = 50)
-```
-
 
 ### Transfer Learning vs Fine Tuning
 Is it better to do transfer learning and fine tuning or both?
@@ -394,13 +427,6 @@ Fine tuning on the other hand requires a base network to be unfrozen and modifie
 
 Only by using the two methods together do we achieve the best results. 
 
-Looking at the results of the learning, we focus on the outcome after 20 epochs.
-```{r}
-epochTimeline[20,]
-```
 
-```{r}
-epochFinetune[20,]
-```
 
 The validation accuraccy did not increase as the original model without fine tuning, managed to produce very accurate validation predictions, however the fine tuned model had 100% accuracy on the training data. This most likely implies overfitting but it is hard to tell with such a small training and validation set. The validation set is only 6 images per class meaning that marginal improvments are nearly unpercievable. This study and techniques could be more accurately understood with a larger sample size. A data set of 2000 images is considered small by some and we only used a total of 50 images per class.
