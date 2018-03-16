@@ -19,45 +19,41 @@ output:
 ---
 
 # Objectives
-The purpose of this homework is to build an image recognition system, using transfer learning and fine-tuning based on pre tuned convolutional neural networks on ImageNet. (http://www.image-net.org/). I started with keras pre trained model (see for instance https://keras.rstudio.com/articles/applimonkeyions.html).
+The purpose of this homework is to build an image recognition system, using transfer learning and fine-tuning based on pre tuned convolutional neural networks on ImageNet. (http://www.image-net.org/). I started with keras pre trained model (see for instance https://keras.rstudio.com/articles/applications.html).
 
 # Exercise 1 -- Image Net
 #### What is Image Net?
+ImageNet is an image database organized according to the WordNet hierarchy (currently only the nouns), in which each node of the hierarchy is depicted by hundreds and thousands of images. Currently there is an average of over five hundred images per node.
 
 #### ImageNet Cheese
 How many different kinds of cheese can we find in ImageNet?
+The query "cheese" matches 30 synsets.
 
 #### Best classifier
 What is the best classifier on ImageNet and what is its error rate?
 
+
 # Exercise 2 -- Build an image recognition system
-Build an image recognition system for a 1000 everyday object monkeyegories (ImageNet ILSVRC) using Keras and TensorFlow.
+Build an image recognition system for a 1000 everyday object categories (ImageNet ILSVRC) using Keras and TensorFlow.
 
 #### Install keras
 ```{r}
-# If the function 'is_keras_available()' returns FALSE install_keras(), if that doesn't work install package from github directly and run install_keras() afterwards:
-# remove.packages('reticulate')
-# remove.packages('tensorflow')
-# remove.packages('keras')
-
-# install.packages('devtools')
-# require(devtools)
-# install_github('rstudio/reticulate')
-# install_github('rstudio/tensorflow')
-# install_github('rstudio/keras')
 if (!require('pacman')) install.packages('pacman')
 
-pacman::p_load(tensorflow, reticulate, keras)
+pacman::p_load(tensorflow, reticulate, keras, ggplot2, ggthemes)
+theme_set(theme_solarized_2(light = FALSE))
 
-#install_keras()
-#is_keras_available()
+# Keras needs to be install after loading the package
+if(!is_keras_abailable()){
+  install_keras()
+}
 ```
 
 #### ResNet50
 Define ResNet50 as we model and check its architecture
 ```{r}
-model <- application_resnet50(weights <- 'imagenet')
-summary(model)
+model0 <- application_resnet50(weights <- 'imagenet')
+summary(model0)
 ```
 
 #### Other pre-trained networks
@@ -68,7 +64,6 @@ Xception, VGG16, VGG19, ResNet50, InceptionV3, InceptionResNetV2, MobileNet, Den
 
 #### Opening an Image
 open an image ('my_image.jpg' in the following example) representing a single object (if possible represented in ImageNet)
-
 ```{r}
 img_path <- 'hot_air_balloon.jpeg'
 img <- image_load(img_path, target_size = c(224,224))
@@ -87,28 +82,25 @@ x <- imagenet_preprocess_input(x)
 
 #### get the model predictions
 ```{r}
-preds <- model %>% predict(x)
+preds <- model0 %>% predict(x)
 ```
 
-#### display the top 5 recognized objects. Do we find the one represented on wer image?
+#### display the top 5 recognized objects. Do we find the one represented on our image?
 ```{r}
 imagenet_decode_predictions(preds, top <- 5)[[1]]
 ```
 
-# Exericse 3 -- wer Turn
+# Exericse 3 -- Your Turn
 ### Binary Object Recognition
-based on wer previous work, build an binary object recognition (only two objects) by
-transfer learning and fine tuning.
+based on your previous work, build an binary object recognition (only two objects) by transfer learning and fine tuning.
 
 #### Choose Two Classes
-I chose spider monkeys and labradors.
+I chose cats and dogs.
 
 #### Download images
-I downloaded 25 images for each class and setup my data with a training directory and a validation directory as follows:
+Proceed adapting the code from https://keras.rstudio.com/articles/applications.html
 
-
-#### Coding
-proceed adapting the code from https://keras.rstudio.com/articles/applimonkeyions.html
+I downloaded 50 images for each class and setup my data as follows:
 ```{r}
 original_dataset_dir <- 'data/original'
 
@@ -165,7 +157,6 @@ file.copy(file.path(original_dataset_dir, fnames),
           file.path(test_dogs_dir))
 ```
 
-
 Let's instantiate the VGG16 model.
 ```{r}
 conv_base <- application_vgg16(
@@ -174,26 +165,25 @@ conv_base <- application_vgg16(
   input_shape = c(150, 150, 3)
 )
 ```
-we pass three arguments to the function:
+We pass three arguments to the function:
 
 -- weights specifies the weight checkpoint from which to initialize the model.
 
--- include_top refers to including (or not) the densely connected classifier on top of the network. By default, this densely connected classifier corresponds to the 1,000 classes from ImageNet. Because we intend to use wer own densely connected classifier (with only two classes: monkey and dog), we don’t need to include it.
+-- include_top refers to including (or not) the densely connected classifier on top of the network. By default, this densely connected classifier corresponds to the 1,000 classes from ImageNet. Because we intend to use our own densely connected classifier (with only two classes: cats and dogs), we don’t need to include it.
 
 -- input_shape is the shape of the image tensors that we’ll feed to the network. This argument is purely optional: if we don’t pass it, the network will be able to process inputs of any size.
 
-Here’s the detail of the architecture of the VGG16 convolutional base. It’s similar to the simple convnets we’re already familiar with:
+Here’s the detail of the architecture of the VGG16 convolutional base. It’s similar to the simple convnets.
 ```{r}
 summary(conv_base)
 ```
-
 At this point, there are two ways we could proceed:
 
--- Running the convolutional base over wer dataset, recording its output to an array on disk, and then using this data as input to a standalone, densely connected classifier similar to those we saw in part 1 of this book. This solution is fast and cheap to run, because it only requires running the convolutional base once for every input image, and the convolutional base is by far the most expensive part of the pipeline. But for the same reason, this technique won’t allow we to use data augmentation.
+-- Running the convolutional base over our dataset, recording its output to an array on disk, and then using this data as input to a standalone, densely connected classifier. This solution is fast and cheap to run, because it only requires running the convolutional base once for every input image, and the convolutional base is by far the most expensive part of the pipeline. But for the same reason, this technique won’t allow us to use data augmentation.
 
--- Extending the model we have (conv_base) by adding dense layers on top, and running the whole thing end to end on the input data. This will allow we to use data augmentation, because every input image goes through the convolutional base every time it’s seen by the model. But for the same reason, this technique is far more expensive than the first.
+-- Extending the model we have (conv_base) by adding dense layers on top, and running the whole thing end to end on the input data. This will allow us to use data augmentation, because every input image goes through the convolutional base every time it’s seen by the model. But for the same reason, this technique is far more expensive than the first.
 
-We will proceed with the second option. Note that this technique is so expensive that we should only attempt it if we have access to a GPU – it’s absolutely intractable on a CPU.
+We will proceed with the second option. Note that this technique is very expensive and should only be attempted with a GPU for large sets.
 
 Because models behave just like layers, we can add a model (like conv_base) to a sequential model just like we would add a layer.
 ```{r}
@@ -212,7 +202,7 @@ As we can see, the convolutional base of VGG16 has 14,714,688 parameters, which 
 
 Before we compile and train the model, it’s very important to freeze the convolutional base. Freezing a layer or set of layers means preventing their weights from being updated during training. If we don’t do this, then the representations that were previously learned by the convolutional base will be modified during training. Because the dense layers on top are randomly initialized, very large weight updates would be propagated through the network, effectively destroying the representations previously learned.
 
-In Keras, we freeze a network using the freeze_weights() function:
+In Keras, we freeze a network using the `freeze_weights()` function:
 ```{r}
 length(model$trainable_weights)
 ```
@@ -224,9 +214,9 @@ length(model$trainable_weights)
 With this setup, only the weights from the two dense layers that we added will be trained. That’s a total of four weight tensors: two per layer (the main weight matrix and the bias vector). Note that in order for these changes to take effect, we must first compile the model. If we ever modify weight trainability after compilation, we should then recompile the model, or these changes will be ignored.
 
 #### USING DATA AUGMENTATION
-Overfitting is caused by having too few samples to learn from, rendering we unable to train a model that can generalize to new data. Given infinite data, wer model would be exposed to every possible aspect of the data distribution at hand: we would never overfit. Data augmentation takes the approach of generating more training data from existing training samples, by augmenting the samples via a number of random transformations that yield believable-looking images. The goal is that at training time, wer model will never see the exact same picture twice. This helps expose the model to more aspects of the data and generalize better.
+Overfitting is caused by having too few samples to learn from, rendering us unable to train a model that can generalize to new data. Given infinite data, the model would be exposed to every possible aspect of the data distribution at hand: we would never overfit. Data augmentation takes the approach of generating more training data from existing training samples, by augmenting the samples via a number of random transformations that yield believable-looking images. The goal is that at training time, the model will never see the exact same picture twice. This helps expose the model to more aspects of the data and generalize better.
 
-In Keras, this can be done by configuring a number of random transformations to be performed on the images read by an image_data_generator(). For example:
+In Keras, this can be done by configuring a number of random transformations to be performed on the images read by an `image_data_generator()`
 ```{r}
 train_datagen = image_data_generator(
   rescale = 1/255,
@@ -277,11 +267,11 @@ history <- model %>% fit_generator(
 ```
 
 ```{r}
-pacman::p_load(ggplot2, ggthemes)
-theme_set(theme_solarized_2(light = FALSE))
 epochTimeline <- as.data.frame(history$metrics)
 epochTimeline$epoch <- seq(1,20)
+```
 
+```{r}
 ggplot(epochTimeline) + 
   geom_point(aes(epoch, loss), size = 2, color = 'tan1') + 
   geom_line(aes(epoch, loss), color = 'tan1') +
@@ -296,14 +286,14 @@ ggplot(epochTimeline) +
   geom_line(aes(epoch, val_acc), color = 'seagreen3') +
   geom_point(aes(epoch, val_acc), size = 2, color = 'seagreen3')
 ```
-Plotting the results of training the model, we reach a validation accuracy of about `91.67%`
+Plotting the results of training the model, we reach a validation accuracy of about `91.67%`. Because the validation set is so small the accuracy moves in increments of around `8.33%`.
 
 #### FINE-TUNING
-Another widely used technique for model reuse, complementary to feature extraction, is fine-tuning Fine-tuning consists of unfreezing a few of the top layers of a frozen model base used for feature extraction, and jointly training both the newly added part of the model (in this case, the fully connected classifier) and these top layers. This is called fine-tuning because it slightly adjusts the more abstract representations of the model being reused, in order to make them more relevant for the problem at hand.
+Another widely used technique for model reuse, complementary to feature extraction, is fine-tuning. Fine-tuning consists of unfreezing a few of the top layers of a frozen model base used for feature extraction, and jointly training both the newly added part of the model (in this case, the fully connected classifier) and these top layers. This is called fine-tuning because it slightly adjusts the more abstract representations of the model being reused, in order to make them more relevant for the problem at hand.
 
-I stated earlier that it’s necessary to freeze the convolution base of VGG16 in order to be able to train a randomly initialized classifier on top. For the same reason, it’s only possible to fine-tune the top layers of the convolutional base once the classifier on top has already been trained. If the classifier isn’t already trained, then the error signal propagating through the network during training will be too large, and the representations previously learned by the layers being fine-tuned will be destroyed. Thus the steps for fine-tuning a network are as follows:
+As stated earlier, it’s necessary to freeze the convolution base of VGG16 in order to be able to train a randomly initialized classifier on top. For the same reason, it’s only possible to fine-tune the top layers of the convolutional base once the classifier on top has already been trained. If the classifier isn’t already trained, then the error signal propagating through the network during training will be too large, and the representations previously learned by the layers being fine-tuned will be destroyed. Thus the steps for fine-tuning a network are as follows:
 
--- Add wer custom network on top of an already-trained base network.
+-- Add our custom network on top of an already-trained base network.
 
 -- Freeze the base network.
 
@@ -313,22 +303,22 @@ I stated earlier that it’s necessary to freeze the convolution base of VGG16 i
 
 -- Jointly train both these layers and the part we added.
 
-We already completed the first three steps when doing feature extraction. Let’s proceed with step 4: Unfreeze conv_base and then freeze individual layers inside it.
+We have already completed the first three steps when doing feature extraction. Let’s proceed with step 4: Unfreeze conv_base and then freeze individual layers inside it.
 
 As a reminder, this is what wer convolutional base looks like:
 ```{r}
 summary(conv_base)
 ```
 
-we’ll fine-tune all of the layers from block3_conv1 and on. Why not fine-tune the entire convolutional base? we could. But we need to consider the following:
+We will fine-tune all of the layers from `block3_conv1` and on. Why not fine-tune the entire convolutional base? we could. But we need to consider the following:
 
--- Earlier layers in the convolutional base encode more-generic, reusable features, whereas layers higher up encode more-specialized features. It’s more useful to fine-tune the more specialized features, because these are the ones that need to be repurposed on wer new problem. There would be fast-decreasing returns in fine-tuning lower layers.
+-- Earlier layers in the convolutional base encode more-generic, reusable features, whereas layers higher up encode more-specialized features. It’s more useful to fine-tune the more specialized features, because these are the ones that need to be repurposed on our new problem. There would be fast-decreasing returns in fine-tuning lower layers.
 
--- The more parameters we’re training, the more we’re at risk of overfitting. The convolutional base has 15 million parameters, so it would be risky to attempt to train it on wer small dataset.
+-- The more parameters we’re training, the more we’re at risk of overfitting. The convolutional base has 15 million parameters, so it would be risky to attempt to train it on our small dataset.
 
-Thus, in this situation, it’s a good strategy to fine-tune only some of the layers in the convolutional base. Let’s set this up, starting from where we left off in the previous example.
+Thus, in this situation, it’s a good strategy to fine-tune only some of the layers in the convolutional base. Let’s set this up.
 ```{r}
-unfreeze_weights(conv_base, from = "block3_conv1")
+unfreeze_weights(conv_base, from = 'block3_conv1')
 ```
 
 ```{r}
@@ -340,6 +330,7 @@ Now we can begin fine-tuning the network. we’ll do this with the RMSProp optim
 ```{r}
 model %>% compile(
   loss = "binary_crossentropy",
+  # low learning rate
   optimizer = optimizer_rmsprop(lr = 1e-5),
   metrics = c("accuracy")
 )
@@ -356,7 +347,9 @@ history <- model %>% fit_generator(
 ```{r}
 epochFinetune <- as.data.frame(history$metrics)
 epochFinetune$epoch <- seq(1,20)
+```
 
+```{r}
 ggplot(epochFinetune) + 
   geom_point(aes(epoch, loss), size = 2, color = 'tan1') + 
   geom_line(aes(epoch, loss), color = 'tan1') +
@@ -395,16 +388,19 @@ model %>% evaluate_generator(test_generator, steps = 50)
 ### Transfer Learning vs Fine Tuning
 Is it better to do transfer learning and fine tuning or both?
 
+Transfer learning was imperative to building our neural network. By using the VGG16 architecture's base, we were able to use previously trained layers as the base of our own classifier. We only needed to add our own layers on top to build a functioning classifier in a short amount of time.
+
+Fine tuning on the other hand requires a base network to be unfrozen and modified at prefereably a low learning rate. Limiting the learning rate effectively limits the magnitude of the modifications we make to the representations of the layers we’re fine-tuning. Updates that are too large may harm these representations. This is called fine-tuning because it slightly adjusts the more abstract representations of the model being reused, in order to make them more relevant for the problem at hand.
+
+Only by using the two methods together do we achieve the best results. 
+
 Looking at the results of the learning, we focus on the outcome after 20 epochs.
 ```{r}
 epochTimeline[20,]
 ```
+
 ```{r}
 epochFinetune[20,]
 ```
 
-The validation accuraccy did not increase, however the fine-tunes model had 100% accuracy on the training data. This most likely implies overfitting but it is hard to tell with such a small training and validation set. The validation set is only 6 images per class meaning that marginal improvments are unpercievable. This study and techniques could be more accurately understood with a larger sample size. A data set of 2000 images is considered small by some and we only used a total of 50 images per class.
-
-
-
-
+The validation accuraccy did not increase as the original model without fine tuning, managed to produce very accurate validation predictions, however the fine tuned model had 100% accuracy on the training data. This most likely implies overfitting but it is hard to tell with such a small training and validation set. The validation set is only 6 images per class meaning that marginal improvments are nearly unpercievable. This study and techniques could be more accurately understood with a larger sample size. A data set of 2000 images is considered small by some and we only used a total of 50 images per class.
