@@ -27,11 +27,13 @@ ImageNet is an image database organized according to the WordNet hierarchy (curr
 
 #### ImageNet Cheese
 How many different kinds of cheese can we find in ImageNet?
+
 The query "cheese" matches 30 synsets.
 
 #### Best classifier
 What is the best classifier on ImageNet and what is its error rate?
 
+ImageNet has several competitions and measures the 'best' on several metrics such as Localization error, Classification error or mean AP depending on the competition task.
 
 # Exercise 2 -- Build an image recognition system
 Build an image recognition system for a 1000 everyday object categories (ImageNet ILSVRC) using Keras and TensorFlow.
@@ -44,7 +46,7 @@ pacman::p_load(tensorflow, reticulate, keras, ggplot2, ggthemes)
 theme_set(theme_solarized_2(light = FALSE))
 
 # Keras needs to be install after loading the package
-if(!is_keras_abailable()){
+if(!is_keras_available()){
   install_keras()
 }
 ```
@@ -101,7 +103,7 @@ I chose cats and dogs.
 Proceed adapting the code from https://keras.rstudio.com/articles/applications.html
 
 I downloaded 50 images for each class and setup my data as follows:
-```{r}
+```{r, message = FALSE, warning = FALSE}
 original_dataset_dir <- 'data/original'
 
 base_dir <- 'data/cats_and_dogs'
